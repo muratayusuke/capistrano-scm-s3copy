@@ -7,6 +7,10 @@ namespace :s3copy do
   exclude_args = exclude_dir.map { |dir| "--exclude '#{dir}'" }
   s3 = Aws::S3::Client.new
 
+  s3_dir = fetch(:s3_dir, fetch(:stage)).to_s
+  s3_path = File.join(s3_dir, archive_name)
+  bucket = fetch :s3_bucket
+
   Aws.config.update(
     access_key_id: fetch(:aws_access_key_id, ENV['AWS_ACCESS_KEY_ID']),
     secret_access_key: fetch(:aws_secret_access_key, ENV['AWS_SECRET_ACCESS_KEY']),
@@ -25,13 +29,9 @@ namespace :s3copy do
 
   task upload_tarball: archive_name do |t|
     tarball = t.prerequisites.first
-    s3_dir = fetch(:s3_dir, fetch(:stage)).to_s
-    s3_path = File.join(s3_dir, tarball)
-    bucket = fetch :s3_bucket
-
-    file_open = File.open(tarball)
-    s3.put_object(bucket: bucket, body: file_open, key: s3_path)
-    file_open.close
+    File.open(tarball, 'rb') do |file|
+      s3.put_object(bucket: bucket, body: file, key: s3_path)
+    end
   end
 
   task :create_release do
@@ -39,7 +39,7 @@ namespace :s3copy do
       invoke 's3copy:upload_tarball'
     else
       File.open(archive_name, 'wb') do |file|
-        p s3.get_object({ bucket: bucket, key: s3_path }, target: file)
+        p s3.get_object({ bucket: fetch(:s3_bucket), key: s3_path }, target: file)
       end
     end
 
