@@ -35,26 +35,32 @@ namespace :s3copy do
   end
 
   task :create_release do
-    if fetch(:upload_tarball, true)
-      invoke 's3copy:upload_tarball'
-    else
-      File.open(archive_name, 'wb') do |file|
-        p s3.get_object({ bucket: fetch(:s3_bucket), key: s3_path }, target: file)
-      end
-    end
-
     on roles(tar_roles) do
       # Make sure the release directory exists
       puts "==> release_path: #{release_path} is created on #{tar_roles} roles <=="
       execute :mkdir, '-p', release_path
+    end
 
-      # Create a temporary file on the server
-      tmp_file = capture('mktemp')
+    if fetch(:upload_tarball, true)
+      invoke 's3copy:upload_tarball'
 
-      # Upload the archive, extract it and finally remove the tmp_file
-      upload!(archive_name, tmp_file)
-      execute :tar, '-xzf', tmp_file, '-C', release_path
-      execute :rm, tmp_file
+      on roles(tar_roles) do
+        # Create a temporary file on the server
+        tmp_file = capture('mktemp')
+
+        # Upload the archive, extract it and finally remove the tmp_file
+        upload!(archive_name, tmp_file)
+        execute :tar, '-xzf', tmp_file, '-C', release_path
+        execute :rm, tmp_file
+      end
+    else
+      # for local deployment from s3
+      File.open(archive_name, 'wb') do |file|
+        p s3.get_object({ bucket: fetch(:s3_bucket), key: s3_path }, target: file)
+      end
+      on roles(tar_roles) do
+        execute :tar, '-xzf', archive_name, '-C', release_path
+      end
     end
   end
 
