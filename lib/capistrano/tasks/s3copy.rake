@@ -58,8 +58,9 @@ namespace :s3copy do
       File.open(archive_name, 'wb') do |file|
         p s3.get_object({ bucket: fetch(:s3_bucket), key: s3_path }, target: file)
       end
+      archive_path = File.expand_path("../#{archive_name}", __FILE__)
       on roles(tar_roles) do
-        execute :tar, '-xzf', archive_name, '-C', release_path
+        execute :tar, '-xzf', archive_path, '-C', release_path
       end
     end
   end
