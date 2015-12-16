@@ -5,6 +5,7 @@ namespace :s3copy do
   include_dir  = fetch(:include_dir) || '*'
   exclude_dir  = Array(fetch(:exclude_dir))
   exclude_args = exclude_dir.map { |dir| "--exclude '#{dir}'" }
+  s3 = Aws::S3::Client.new
 
   Aws.config.update(
     access_key_id: fetch(:aws_access_key_id, ENV['AWS_ACCESS_KEY_ID']),
@@ -26,7 +27,6 @@ namespace :s3copy do
     tarball = t.prerequisites.first
     s3_dir = fetch(:s3_dir, fetch(:stage)).to_s
     s3_path = File.join(s3_dir, tarball)
-    s3 = Aws::S3::Client.new
     bucket = fetch :s3_bucket
 
     file_open = File.open(tarball)
