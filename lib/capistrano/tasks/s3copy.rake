@@ -1,6 +1,12 @@
 namespace :s3copy do
   require 'aws-sdk'
 
+  Aws.config.update(
+    access_key_id: fetch(:aws_access_key_id, ENV['AWS_ACCESS_KEY_ID']),
+    secret_access_key: fetch(:aws_secret_access_key, ENV['AWS_SECRET_ACCESS_KEY']),
+    region: fetch(:aws_region, ENV['AWS_REGION'])
+  )
+
   archive_name = 'archive.tar.gz'
   include_dir  = fetch(:include_dir) || '*'
   exclude_dir  = Array(fetch(:exclude_dir))
@@ -10,12 +16,6 @@ namespace :s3copy do
   s3_dir = fetch(:s3_dir, fetch(:stage)).to_s
   s3_path = File.join(s3_dir, archive_name)
   bucket = fetch :s3_bucket
-
-  Aws.config.update(
-    access_key_id: fetch(:aws_access_key_id, ENV['AWS_ACCESS_KEY_ID']),
-    secret_access_key: fetch(:aws_secret_access_key, ENV['AWS_SECRET_ACCESS_KEY']),
-    region: fetch(:aws_region, ENV['AWS_REGION'])
-  )
 
   # Defalut to :all roles
   tar_roles = fetch(:tar_roles, :all)
